@@ -1245,7 +1245,14 @@ function onSrch(){
     var tokens=raw.trim().split(/\s+/).filter(Boolean);if(!tokens.length)return;
     var added=[],missing=[];
     tokens.forEach(function(token){
-      var p=S.products.filter(function(x){return(x.num||'').toLowerCase()===token.toLowerCase();})[0];
+      var p=S.products.filter(function(x){
+        var num=(x.num||'').toLowerCase();
+        var t=token.toLowerCase();
+        // 完全比對，或補零比對（11 → 011、0011 等）
+        if(num===t)return true;
+        if(/^\d+$/.test(t)&&/^\d+$/.test(num)&&parseInt(num,10)===parseInt(t,10))return true;
+        return false;
+      })[0];
       if(!p){missing.push(token);return;}
       var maxS=(S.channel==='local')?(p.display_stock||0):(p.warehouse_stock||0);
       var cur=S.cart[p.id]||0;
@@ -1269,6 +1276,12 @@ function onSrch(){
   var results=S.products.filter(function(p){
     var num=(p.num||'').toLowerCase();
     var name=(p.name||'').toLowerCase();
+    // 純數字輸入：比對補零後的數字（11 → 011/0011），或前綴
+    if(/^\d+$/.test(q)&&/^\d+$/.test(num)){
+      if(parseInt(num,10)===parseInt(q,10))return true;
+      if(num.startsWith(q))return true;
+      return false;
+    }
     return num.startsWith(q)||name.indexOf(q)>=0;
   }).slice(0,8);
 
